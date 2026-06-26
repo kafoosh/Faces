@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0c0c0e">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%231c1c1e'/><circle cx='16' cy='13' r='5' fill='%23e6e6ea'/><path d='M7 27c0-5 4-8 9-8s9 3 9 8' fill='%23e6e6ea'/></svg>">
+<title>Face Test</title>
+<style>
+  :root{
+    --bg:#f5f5f7; --ink:#1c1c1e; --muted:#8a8a8e; --tile-bg:#e3e3e8;
+    --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,system-ui,sans-serif;
+  }
+  *{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ background:var(--bg); color:var(--ink); font-family:var(--font);
+    -webkit-text-size-adjust:100%; }
+  body.locked{ overflow:hidden; height:100vh; }
+
+  /* ---------- the wall (the "actual page") ---------- */
+  header{ padding:34px 20px 14px; text-align:center; }
+  header h1{ font-size:26px; font-weight:700; letter-spacing:-.01em; }
+  header p{ margin-top:6px; font-size:14px; color:var(--muted); }
+
+  /* Pinterest-style masonry: flex columns, each tile keeps its own aspect ratio
+     (set inline) so heights stagger naturally — never neatly aligned. */
+  #grid{ display:flex; align-items:flex-start; gap:7px; padding:10px 10px 24px; }
+  .col{ flex:1 1 0; min-width:0; display:flex; flex-direction:column; gap:7px; }
+  .tile{ position:relative; width:100%; border-radius:12px; overflow:hidden;
+    background:var(--tile-bg); }
+  .tile img{ width:100%; height:100%; object-fit:cover; display:block;
+    background:var(--tile-bg); }
+  #sentinel{ height:1px; }
+  footer{ text-align:center; color:var(--muted); font-size:11px; padding:14px 20px 36px;
+    letter-spacing:.04em; }
+
+  /* ---------- the welcome overlay (covert force selector) ---------- */
+  #veil{ position:fixed; inset:0; z-index:50;
+    display:flex; align-items:center; justify-content:center; padding:24px;
+    background:rgba(18,18,22,.46);
+    -webkit-backdrop-filter:blur(22px) saturate(1.1); backdrop-filter:blur(22px) saturate(1.1);
+    transition:opacity .8s ease; }
+  #veil.dismiss{ opacity:0; pointer-events:none; }
+  #card{ width:min(86vw,360px); text-align:center;
+    background:rgba(255,255,255,.94); border-radius:24px; padding:38px 30px;
+    box-shadow:0 30px 80px rgba(0,0,0,.35); }
+  #card .face{ width:58px; height:58px; margin:0 auto 18px; border-radius:50%;
+    background:#ececf1; display:flex; align-items:center; justify-content:center; }
+  #card .face svg{ width:34px; height:34px; color:#9a9aa0; }
+  #card h2{ font-size:22px; font-weight:700; letter-spacing:-.01em; }
+  #card p{ margin-top:12px; font-size:16px; line-height:1.5; color:#3a3a3e; }
+  #card .hint{ margin-top:24px; font-size:12px; letter-spacing:.18em; text-transform:uppercase;
+    color:#b0b0b6; }
+</style>
+</head>
+<body class="locked">
+
+  <header>
+    <h1>Face Test</h1>
+    <p>How many of these people do you recognise? Keep scrolling&hellip;</p>
+  </header>
+
+  <main id="grid"></main>
+  <div id="sentinel" aria-hidden="true"></div>
+
+  <footer>A quick visual recognition test.</footer>
+
+  <!-- Welcome overlay. The WHOLE surface is the tap target; it is secretly split
+       into three full-width horizontal bands (top / middle / bottom third) that
+       set which face will be forced. Nothing on screen hints at the bands. -->
+  <div id="veil">
+    <div id="card">
+      <div class="face" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="9" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>
+      </div>
+      <h2>Welcome to Face Test</h2>
+      <p>How many of these people do you recognise?</p>
+      <div class="hint">Tap anywhere to begin</div>
+    </div>
+  </div>
+
+<script>
+"use strict";
+/* ===========================================================================
+   FACE TEST — a lite, single-page "Locky Mclockface".
+   A wall of faces forces one of three people the moment the phone locks /
+   the tab goes inactive. The force is chosen covertly by WHERE the spectator
+   taps the welcome overlay (top/middle/bottom third of the screen).
+
+   ── HOW THE FORCE IS SET ──────────────────────────────────────────────────
+     Top third    → Einstein
+     Middle third → Obama
+     Bottom third → Scarlett Johansson
+
+   ── THE MAGIC ─────────────────────────────────────────────────────────────
+     After a BIG scroll, when the phone locks / the user swipes the browser
+     away / (desktop) the tab stops being active, every famous face on the
+     wall becomes a random stranger EXCEPT one large, central tile, which
+     becomes the forced person. It stays put until the page is reloaded.
+   =========================================================================== */
+
+/* ============================  CONFIG  ====================================
+   STEP 1 — Upload the three files in /source-images/ to your WordPress Media
+   Library, then paste their File URLs below (replacing the defaults).
+   STEP 2 — Upload the twelve files in /source-images/celebs/ the same way and
+   paste their URLs into EXTRA_CELEBS (or leave the defaults — they work too).
+   The defaults point at the original web images so the app runs immediately,
+   but web images CAN be deleted; your WordPress copies will not.            */
+
+const FORCE = {
+  einstein: "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/einstein.jpg", // TOP third
+  obama:    "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/obama.jpg",             // MIDDLE third
+  scarlett: "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/scarlett.jpg",                                                                                              // BOTTOM third
+};
+
+// A handful of other recognisable faces sprinkled into the initial wall.
+// (After the lock, these turn into strangers too — only the forced one stays.)
+const EXTRA_CELEBS = [
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/tom_cruise.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/marilyn_monroe.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/beyonce.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/elizabeth_ii.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/einstein.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/morgan_freeman.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/audrey_hepburn.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/leonardo_dicaprio.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/keanu_reeves.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/obama.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/oprah_winfrey.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/scarlett.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/scarlett.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/f_t2ksfwqaakfuo.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/timothee-chalamet.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/sabrina-carpenter.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/kanye-west.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/conan.webp",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/john-mulaney.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/the_rock.webp",
+];
+
+const BIG_SCROLL_VH = 1.2;   // how far down they must scroll before the trick can fire (in screen-heights)
+const BATCH         = 36;    // tiles appended per infinite-scroll batch
+const CELEB_EVERY   = 11;    // ~1 in N tiles is a recognisable celebrity (before the reveal)
+
+/* ==========================================================================
+   RANDOM STRANGERS — two sustainable, no-upload, deletion-proof sources:
+     • LoremFlickr — varied REAL photos (candids, street, full-body, groups)
+       pulled from Flickr by tag. We request each tile's own size, so photos
+       keep a natural aspect ratio — this is the "not just headshots" variety.
+     • randomuser.me — 200 fast, reliable studio headshots; also the onerror
+       fallback so a slow/missing Flickr photo never leaves a broken tile.
+   ========================================================================== */
+const RU_POOL = [];
+for (const g of ["men","women"]) for (let i = 0; i < 100; i++)
+  RU_POOL.push(`https://randomuser.me/api/portraits/${g}/${i}.jpg`);
+
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function randomFace(){ return RU_POOL[(Math.random()*RU_POOL.length)|0]; }   // a reliable headshot
+
+// Flickr tags — comma = AND, so each photo must actually contain a face. Keeps
+// framing variety (candid / selfie / model) while staying people, not scenery.
+const LF_TAGS = ["face","selfie","headshot","portrait,face","portrait,woman",
+                 "portrait,man","model,face","candid,face","smiling,face"];
+function loremFlickr(ar){
+  const w = 400, h = Math.round(w / ar);                 // request the tile's aspect → minimal crop
+  const tag = LF_TAGS[(Math.random()*LF_TAGS.length)|0];
+  const lock = (Math.random()*1e5)|0;                    // a different Flickr photo each time
+  return `https://loremflickr.com/${w}/${h}/${encodeURIComponent(tag)}?lock=${lock}`;
+}
+// A random non-celebrity: mostly varied Flickr photos, some quick headshots.
+const LF_SHARE = 0.72;
+function randomPerson(ar){ return Math.random() < LF_SHARE ? loremFlickr(ar) : randomFace(); }
+
+/* ==========================================================================
+   BUILD THE WALL — Pinterest-style masonry (shortest-column packing)
+   ========================================================================== */
+function setFace(img, url){
+  img.dataset.fb = "";                 // allow one fresh fallback for the new src
+  img.removeAttribute("srcset");
+  img.src = url;
+}
+function onImgError(){
+  // A dead/slow URL never shows a broken-image icon — swap in a reliable headshot.
+  if (this.dataset.fb) return;         // only fall back once, never loop
+  this.dataset.fb = "1";
+  this.src = randomFace();
+}
+
+const grid = document.getElementById("grid");
+const sentinel = document.getElementById("sentinel");
+let revealed = false;                  // after the swap, newly-loaded tiles are strangers only
+
+// Celebrities cycle through a shuffled list so they spread out (no clustering).
+const CELEB_POOL = shuffle([FORCE.einstein, FORCE.obama, FORCE.scarlett, ...EXTRA_CELEBS]);
+let celebIdx = 0;
+function nextCeleb(){ return CELEB_POOL[celebIdx++ % CELEB_POOL.length]; }
+
+// A tile's aspect ratio (width ÷ height). Smaller = taller = visually "large".
+// Portrait-leaning, like the reference wall.   [ratio, weight]
+const ASPECTS = [[0.7,3],[0.8,3],[1,3],[1.33,2],[1.5,1]];
+const AR_TOTAL = ASPECTS.reduce((s,a)=>s+a[1],0);
+function randomAR(){
+  let r = Math.random()*AR_TOTAL;
+  for (const [ar,w] of ASPECTS){ if ((r-=w) < 0) return ar; }
+  return 1;
+}
+const isLargeAR = ar => ar <= 0.8;     // tall tiles read as "large"
+
+// Masonry columns: each new tile goes to the currently shortest column. Heights
+// come from the (known) aspect ratio, so packing never reflows on append.
+let cols = [], colH = [];
+function columnCount(){ return Math.max(2, Math.floor(window.innerWidth / 250)); }
+function buildColumns(){
+  grid.textContent = "";
+  cols = []; colH = [];
+  for (let i = 0, n = columnCount(); i < n; i++){
+    const c = document.createElement("div"); c.className = "col";
+    grid.appendChild(c); cols.push(c); colH.push(0);
+  }
+}
+function placeTile(tile, ar){
+  let m = 0; for (let i = 1; i < colH.length; i++) if (colH[i] < colH[m]) m = i;
+  cols[m].appendChild(tile);
+  colH[m] += 1 / ar;                   // relative height = height ÷ width
+}
+
+function makeTile(ar, src){
+  const tile = document.createElement("div");
+  tile.className = "tile";
+  tile.style.aspectRatio = String(ar);
+  tile.dataset.ar = ar;
+  if (isLargeAR(ar)) tile.dataset.large = "1";
+  const img = document.createElement("img");
+  img.loading = "lazy"; img.decoding = "async"; img.referrerPolicy = "no-referrer"; img.alt = "";
+  img.onerror = onImgError;
+  img.src = src;
+  tile.appendChild(img);
+  return tile;
+}
+
+// Append a batch — endless wall, celebs sprinkled in until the reveal.
+function addBatch(n){
+  for (let i = 0; i < n; i++){
+    const ar = randomAR();
+    const useCeleb = !revealed && Math.random() < 1 / CELEB_EVERY;
+    placeTile(makeTile(ar, useCeleb ? nextCeleb() : randomPerson(ar)), ar);
+  }
+}
+
+buildColumns();
+addBatch(BATCH * 2);                   // initial screens to fill behind the overlay
+
+// Re-flow into a new column count on resize / orientation change (keeps every tile + state).
+let resizeT;
+window.addEventListener("resize", () => {
+  clearTimeout(resizeT);
+  resizeT = setTimeout(() => {
+    const tiles = [...grid.querySelectorAll(".tile")];
+    buildColumns();
+    tiles.forEach(t => placeTile(t, parseFloat(t.dataset.ar) || 1));
+  }, 200);
+});
+
+// Infinite scroll: keep filling whenever the bottom sentinel nears the viewport.
+new IntersectionObserver((e) => { if (e[0].isIntersecting) addBatch(BATCH); },
+  { rootMargin: "1000px" }).observe(sentinel);
+
+// Preload the three forces so the reveal is instant the moment the screen unlocks.
+[FORCE.einstein, FORCE.obama, FORCE.scarlett].forEach(u => { const im = new Image(); im.referrerPolicy = "no-referrer"; im.src = u; });
+
+/* ==========================================================================
+   THE COVERT FORCE — the welcome overlay
+   ========================================================================== */
+let force = null, armed = false, bigScrolled = false, swapped = false, dismissed = false;
+
+const veil = document.getElementById("veil");
+veil.addEventListener("click", (e) => {
+  if (dismissed) return;
+  dismissed = true;
+
+  const y = e.clientY, h = window.innerHeight;        // which third did they tap?
+  force = (y < h / 3)       ? FORCE.einstein
+        : (y < (2 * h) / 3) ? FORCE.obama
+        :                     FORCE.scarlett;
+  armed = true;
+
+  veil.classList.add("dismiss");
+  document.body.classList.remove("locked");           // unlock scrolling
+  setTimeout(() => veil.remove(), 850);
+});
+
+/* ==========================================================================
+   THE TRIGGER — big scroll, then lock / leave
+   ========================================================================== */
+window.addEventListener("scroll", () => {
+  if (window.scrollY > BIG_SCROLL_VH * window.innerHeight) bigScrolled = true;
+}, { passive: true });
+
+// Choose the tile that becomes the forced face: the most central LARGE (tall)
+// tile in view, so the forced image is always large. If — rarely — none is on
+// screen, make the most central visible tile large.
+function chooseForcedTile(){
+  const margin = innerHeight * 0.5;
+  const cx = innerWidth / 2, cy = innerHeight / 2;
+  const vis = Array.from(grid.querySelectorAll(".tile"))
+    .map(t => ({ t, img: t.querySelector("img"), r: t.getBoundingClientRect() }))
+    .filter(o => o.r.bottom > -margin && o.r.top < innerHeight + margin &&
+                 o.r.right > 0 && o.r.left < innerWidth && o.img);
+  if (!vis.length) return null;
+  const central = arr => arr
+    .map(o => ({ o, d: Math.hypot(o.r.left + o.r.width/2 - cx, o.r.top + o.r.height/2 - cy) }))
+    .sort((a, b) => a.d - b.d)[0].o;
+  const larges = vis.filter(o => o.t.dataset.large);
+  if (larges.length) return central(larges);
+  const pick = central(vis);                          // guarantee "always large"
+  pick.t.dataset.large = "1"; pick.t.dataset.ar = "0.75"; pick.t.style.aspectRatio = "0.75";
+  return pick;
+}
+
+const isStranger = u => /randomuser\.me|loremflickr\.com/.test(u);
+
+function doSwap(){
+  if (swapped || !armed || !bigScrolled || !force) return;
+  const target = chooseForcedTile();
+  if (!target) return;                                // nothing on screen yet — let a later trigger fire
+  swapped = true; revealed = true;                    // stop sprinkling new celebs from here on
+
+  // Every famous face anywhere on the wall becomes a random stranger (matched to
+  // that tile's aspect, so no reflow) — except the target, which becomes the
+  // forced person on its large, central tile.
+  grid.querySelectorAll(".tile").forEach(t => {
+    const img = t.querySelector("img");
+    if (img && img !== target.img && !isStranger(img.src))
+      setFace(img, randomPerson(parseFloat(t.dataset.ar) || 1));
+  });
+  setFace(target.img, force);                         // the one famous face left standing
+}
+
+// Phone lock / swipe-away / app background → "hidden".  Desktop "not the active
+// tab" → also "hidden" (tab switch / minimise) or window "blur" (another window
+// on top).  Either fires the swap, once, after a big scroll.
+document.addEventListener("visibilitychange", () => { if (document.hidden) doSwap(); });
+window.addEventListener("blur",    doSwap);
+window.addEventListener("pagehide", doSwap);
+
+/* Manual hook for verification only (lets a test drive the swap deterministically). */
+window.__faceTest = { doSwap, addBatch, state: () => ({ force, armed, bigScrolled, swapped, revealed }),
+                      arm: (f) => { force = f; armed = true; bigScrolled = true; } };
+</script>
+</body>
+</html>
