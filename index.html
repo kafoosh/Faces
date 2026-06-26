@@ -96,9 +96,11 @@
 
    ── THE MAGIC ─────────────────────────────────────────────────────────────
      After a BIG scroll, when the phone locks / the user swipes the browser
-     away / (desktop) the tab stops being active, every famous face on the
-     wall becomes a random stranger EXCEPT one large, central tile, which
-     becomes the forced person. It stays put until the page is reloaded.
+     away / (desktop) the tab stops being active, every famous face IN THE
+     LANDED VIEW becomes a random stranger EXCEPT one large, central tile,
+     which becomes the forced person. Celebrities elsewhere on the wall stay,
+     so scrolling away still looks like a normal wall of faces — they could
+     have stopped on anyone. The forced face stays put until the page reloads.
    =========================================================================== */
 
 /* ============================  CONFIG  ====================================
@@ -208,6 +210,18 @@ const CELEB_POOL = shuffle([FORCE.dicaprio, FORCE.obama, FORCE.scarlett, ...EXTR
 let celebIdx = 0;
 function nextCeleb(){ return CELEB_POOL[celebIdx++ % CELEB_POOL.length]; }
 
+// After the reveal we KEEP seeding celebrities throughout the wall (off-screen and
+// in newly-loaded batches) so it stays believable that the spectator could have
+// stopped on a famous face anywhere — but never the forced person again, so the
+// one they landed on stays unique. Built lazily once `force` is known.
+let seedPool = [], seedIdx = 0;
+function nextSeedCeleb(){
+  if (!seedPool.length){
+    seedPool = shuffle([...new Set(CELEB_POOL)].filter(u => u !== force));
+  }
+  return seedPool[seedIdx++ % seedPool.length];
+}
+
 // Learn each celebrity / force image's TRUE aspect ratio up front, so its tile is
 // sized to match and the photo is NEVER cropped. Resolves on load OR error so a
 // slow / missing image can't stall the wall.
@@ -271,8 +285,10 @@ function makeTile(ar, src, celeb){
 //   • LoremFlickr→ the exact size we request (cover, aspect already matches)
 //   • randomuser → square headshot → square tile (cover, no crop)
 function pickTile(){
-  if (!revealed && Math.random() < 1 / CELEB_EVERY){
-    const src = nextCeleb();
+  if (Math.random() < 1 / CELEB_EVERY){
+    // Before the reveal: any celeb. After: any celeb EXCEPT the forced person,
+    // so freshly-scrolled areas still look like a normal wall full of faces.
+    const src = revealed ? nextSeedCeleb() : nextCeleb();
     return { src, ar: celebAR[src] || 0.78, celeb: true };
   }
   if (Math.random() < LF_SHARE){
@@ -371,15 +387,25 @@ function doSwap(){
   if (swapped || !armed || !bigScrolled || !force) return;
   const target = chooseForcedTile();
   if (!target) return;                                // nothing on screen yet — let a later trigger fire
-  swapped = true; revealed = true;                    // stop sprinkling new celebs from here on
+  swapped = true; revealed = true;                    // from here on, new celebs avoid the forced person
 
-  // Every OTHER famous face on the wall becomes a stranger — a Flickr photo at the
-  // same aspect so nothing crops or reflows (drop the .celeb full-fit styling).
+  // Clean the LANDED VIEW only: every other famous face currently on screen becomes
+  // a stranger, so the spectator sees exactly one celebrity — the forced one.
+  // Off-screen celebrities stay put (so scrolling up/down still reveals a wall full
+  // of faces — it must look like they could have stopped on anyone, anywhere). The
+  // only off-screen change: if a tile happens to show the forced person, re-seed it
+  // to a different celeb so the landed face stays unique on the whole wall.
   grid.querySelectorAll(".tile").forEach(t => {
     const img = t.querySelector("img");
-    if (img && img !== target.img && !isStranger(img.src)){
+    if (!img || img === target.img || isStranger(img.src)) return;   // skip target + existing strangers
+    const r = t.getBoundingClientRect();
+    const onScreen = r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth;
+    if (onScreen){
+      // Same aspect → nothing crops or reflows (drop the .celeb full-fit styling).
       t.classList.remove("celeb");
       setFace(img, loremFlickr(parseFloat(t.dataset.ar) || 1));
+    } else if (img.src === force){
+      setFace(img, nextSeedCeleb());
     }
   });
 
