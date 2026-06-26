@@ -152,39 +152,31 @@ const BATCH         = 36;    // tiles appended per infinite-scroll batch
 const CELEB_EVERY   = 6;     // ~1 in N tiles is a recognisable celebrity (before the reveal)
 
 /* ==========================================================================
-   RANDOM STRANGERS — two sustainable, no-upload, deletion-proof sources:
-     • LoremFlickr — varied REAL photos (candids, street, full-body, groups)
-       pulled from Flickr by tag. We request each tile's own size, so photos
-       keep a natural aspect ratio — this is the "not just headshots" variety.
-     • randomuser.me — 200 fast, reliable studio headshots; also the onerror
-       fallback so a slow/missing Flickr photo never leaves a broken tile.
+   RANDOM STRANGERS — curated, all-SFW sources ONLY. We deliberately do NOT pull
+   from Flickr / the open web (that route surfaced adult photos for tags like
+   "model" / "portrait,woman", with no reliable safe-search to switch off). Two
+   no-upload, deletion-proof feeds, ~270 distinct faces, cycled so any repeat
+   stays far away from its twin:
+     • randomuser.me — 200 studio headshots; also the onerror fallback so a
+       slow / missing image never leaves a broken tile.
+     • i.pravatar.cc — 70 more curated portrait faces, for extra variety.
    ========================================================================== */
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
 const RU_POOL = [];
 for (const g of ["men","women"]) for (let i = 0; i < 100; i++)
   RU_POOL.push(`https://randomuser.me/api/portraits/${g}/${i}.jpg`);
-
-function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; [a[i],a[j]]=[a[j],a[i]]; } return a; }
 shuffle(RU_POOL);
 let ruIdx = 0;
-function randomFace(){ return RU_POOL[ruIdx++ % RU_POOL.length]; }   // cycles, no repeats until all 200 used
+function randomFace(){ return RU_POOL[ruIdx++ % RU_POOL.length]; }   // reliable fallback headshot
 
-// Flickr tags — comma = AND, so each photo must actually contain a face. Keeps
-// framing variety (candid / selfie / model) while staying people, not scenery.
-const LF_TAGS = ["face","selfie","headshot","portrait,face","portrait,woman",
-                 "portrait,man","model,face","candid,face","smiling,face"];
-const usedLocks = new Set();
-function freshLock(){
-  let lock; do { lock = (Math.random()*1e5)|0; } while (usedLocks.has(lock));
-  usedLocks.add(lock); return lock;
-}
-function loremFlickr(ar){
-  const w = 400, h = Math.round(w / ar);                 // request the tile's aspect → minimal crop
-  const tag = LF_TAGS[(Math.random()*LF_TAGS.length)|0];
-  return `https://loremflickr.com/${w}/${h}/${encodeURIComponent(tag)}?lock=${freshLock()}`;
-}
-// A random non-celebrity: mostly varied Flickr photos, some quick headshots.
-const LF_SHARE = 0.72;
-function randomPerson(ar){ return Math.random() < LF_SHARE ? loremFlickr(ar) : randomFace(); }
+// Full stranger pool = randomuser + pravatar, shuffled together so the two
+// sources interleave instead of appearing in clumps. Cycles, no near repeats.
+const FACE_POOL = [...RU_POOL];
+for (let i = 1; i <= 70; i++) FACE_POOL.push(`https://i.pravatar.cc/512?img=${i}`);
+shuffle(FACE_POOL);
+let faceIdx = 0;
+function randomPerson(){ return FACE_POOL[faceIdx++ % FACE_POOL.length]; }
 
 /* ==========================================================================
    BUILD THE WALL — Pinterest-style masonry (shortest-column packing)
@@ -236,9 +228,10 @@ function preloadCelebs(){
   })));
 }
 
-// A tile's aspect ratio (width ÷ height). Smaller = taller = visually "large".
-// Portrait-leaning, like the reference wall.   [ratio, weight]
-const ASPECTS = [[0.7,3],[0.8,3],[1,3],[1.33,2],[1.5,1]];
+// Stranger-tile aspect ratio (width ÷ height). Smaller = taller = visually "large".
+// Portrait-to-square only: these are head-and-shoulders photos shown via `cover`,
+// so we avoid wide tiles that would crop-zoom awkwardly into a face. [ratio, weight]
+const ASPECTS = [[0.7,3],[0.8,3],[1,3],[1.25,1]];
 const AR_TOTAL = ASPECTS.reduce((s,a)=>s+a[1],0);
 function randomAR(){
   let r = Math.random()*AR_TOTAL;
@@ -280,10 +273,9 @@ function makeTile(ar, src, celeb){
   return tile;
 }
 
-// Decide a tile's source FIRST, then match its aspect ratio so nothing is cropped:
-//   • celeb      → its real aspect (from preload), shown whole via `contain`
-//   • LoremFlickr→ the exact size we request (cover, aspect already matches)
-//   • randomuser → square headshot → square tile (cover, no crop)
+// Decide a tile's source, then its aspect ratio:
+//   • celeb    → its real aspect (from preload), shown whole via `contain`
+//   • stranger → a curated SFW face in a portrait-ish tile, centred via `cover`
 function pickTile(){
   if (Math.random() < 1 / CELEB_EVERY){
     // Before the reveal: any celeb. After: any celeb EXCEPT the forced person,
@@ -291,11 +283,7 @@ function pickTile(){
     const src = revealed ? nextSeedCeleb() : nextCeleb();
     return { src, ar: celebAR[src] || 0.78, celeb: true };
   }
-  if (Math.random() < LF_SHARE){
-    const ar = randomAR();
-    return { src: loremFlickr(ar), ar, celeb: false };
-  }
-  return { src: randomFace(), ar: 1, celeb: false };
+  return { src: randomPerson(), ar: randomAR(), celeb: false };
 }
 
 // Append a batch — endless wall, celebs sprinkled in until the reveal.
@@ -381,7 +369,7 @@ function chooseForcedTile(){
   return pick;
 }
 
-const isStranger = u => /randomuser\.me|loremflickr\.com/.test(u);
+const isStranger = u => /randomuser\.me|i\.pravatar\.cc/.test(u);
 
 function doSwap(){
   if (swapped || !armed || !bigScrolled || !force) return;
@@ -401,9 +389,9 @@ function doSwap(){
     const r = t.getBoundingClientRect();
     const onScreen = r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth;
     if (onScreen){
-      // Same aspect → nothing crops or reflows (drop the .celeb full-fit styling).
+      // Keep the tile's size (no reflow); a curated SFW face fills it via cover.
       t.classList.remove("celeb");
-      setFace(img, loremFlickr(parseFloat(t.dataset.ar) || 1));
+      setFace(img, randomPerson());
     } else if (img.src === force){
       setFace(img, nextSeedCeleb());
     }
