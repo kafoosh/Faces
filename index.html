@@ -110,9 +110,9 @@
    but web images CAN be deleted; your WordPress copies will not.            */
 
 const FORCE = {
-  einstein: "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/einstein.jpg", // TOP third
-  obama:    "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/obama.jpg",             // MIDDLE third
-  scarlett: "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/scarlett.jpg",                                                                                              // BOTTOM third
+  dicaprio: "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/leonardo_dicaprio.jpg", // TOP third
+  obama:    "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/obama.jpg",              // MIDDLE third
+  scarlett: "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/scarlett.jpg",           // BOTTOM third
 };
 
 // A handful of other recognisable faces sprinkled into the initial wall.
@@ -130,7 +130,6 @@ const EXTRA_CELEBS = [
   "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/obama.jpg",
   "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/oprah_winfrey.jpg",
   "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/scarlett.jpg",
-  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/scarlett.jpg",
   "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/f_t2ksfwqaakfuo.jpg",
   "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/timothee-chalamet.jpg",
   "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/sabrina-carpenter.jpg",
@@ -138,11 +137,17 @@ const EXTRA_CELEBS = [
   "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/conan.webp",
   "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/john-mulaney.jpg",
   "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/the_rock.webp",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/angelina-jolie.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/billie-eilish.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/clooney.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/jennifer-aniston.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/kimk.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/olivia-rodrigo.jpg",
 ];
 
 const BIG_SCROLL_VH = 1.2;   // how far down they must scroll before the trick can fire (in screen-heights)
 const BATCH         = 36;    // tiles appended per infinite-scroll batch
-const CELEB_EVERY   = 11;    // ~1 in N tiles is a recognisable celebrity (before the reveal)
+const CELEB_EVERY   = 6;     // ~1 in N tiles is a recognisable celebrity (before the reveal)
 
 /* ==========================================================================
    RANDOM STRANGERS — two sustainable, no-upload, deletion-proof sources:
@@ -157,17 +162,23 @@ for (const g of ["men","women"]) for (let i = 0; i < 100; i++)
   RU_POOL.push(`https://randomuser.me/api/portraits/${g}/${i}.jpg`);
 
 function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; [a[i],a[j]]=[a[j],a[i]]; } return a; }
-function randomFace(){ return RU_POOL[(Math.random()*RU_POOL.length)|0]; }   // a reliable headshot
+shuffle(RU_POOL);
+let ruIdx = 0;
+function randomFace(){ return RU_POOL[ruIdx++ % RU_POOL.length]; }   // cycles, no repeats until all 200 used
 
 // Flickr tags — comma = AND, so each photo must actually contain a face. Keeps
 // framing variety (candid / selfie / model) while staying people, not scenery.
 const LF_TAGS = ["face","selfie","headshot","portrait,face","portrait,woman",
                  "portrait,man","model,face","candid,face","smiling,face"];
+const usedLocks = new Set();
+function freshLock(){
+  let lock; do { lock = (Math.random()*1e5)|0; } while (usedLocks.has(lock));
+  usedLocks.add(lock); return lock;
+}
 function loremFlickr(ar){
   const w = 400, h = Math.round(w / ar);                 // request the tile's aspect → minimal crop
   const tag = LF_TAGS[(Math.random()*LF_TAGS.length)|0];
-  const lock = (Math.random()*1e5)|0;                    // a different Flickr photo each time
-  return `https://loremflickr.com/${w}/${h}/${encodeURIComponent(tag)}?lock=${lock}`;
+  return `https://loremflickr.com/${w}/${h}/${encodeURIComponent(tag)}?lock=${freshLock()}`;
 }
 // A random non-celebrity: mostly varied Flickr photos, some quick headshots.
 const LF_SHARE = 0.72;
@@ -193,7 +204,7 @@ const sentinel = document.getElementById("sentinel");
 let revealed = false;                  // after the swap, newly-loaded tiles are strangers only
 
 // Celebrities cycle through a shuffled list so they spread out (no clustering).
-const CELEB_POOL = shuffle([FORCE.einstein, FORCE.obama, FORCE.scarlett, ...EXTRA_CELEBS]);
+const CELEB_POOL = shuffle([FORCE.dicaprio, FORCE.obama, FORCE.scarlett, ...EXTRA_CELEBS]);
 let celebIdx = 0;
 function nextCeleb(){ return CELEB_POOL[celebIdx++ % CELEB_POOL.length]; }
 
@@ -316,7 +327,7 @@ veil.addEventListener("click", (e) => {
   dismissed = true;
 
   const y = e.clientY, h = window.innerHeight;        // which third did they tap?
-  force = (y < h / 3)       ? FORCE.einstein
+  force = (y < h / 3)       ? FORCE.dicaprio
         : (y < (2 * h) / 3) ? FORCE.obama
         :                     FORCE.scarlett;
   armed = true;
