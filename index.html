@@ -134,14 +134,12 @@ const FORCE = {
   scarlett: "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/scarlett.jpg",           // BOTTOM third
 };
 
-// A handful of other recognisable faces sprinkled into the initial wall.
-// (After the lock, these turn into strangers too — only the forced one stays.)
 const EXTRA_CELEBS = [
   "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/tom_cruise.jpg",
   "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/marilyn_monroe.jpg",
   "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/beyonce.jpg",
   "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/elizabeth_ii.jpg",
-  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/einstein.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/screenshot-2026-06-28-at-2.52.43-pm.png",
   "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/morgan_freeman.jpg",
   "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/audrey_hepburn.jpg",
   "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/keanu_reeves.jpg",
@@ -159,22 +157,34 @@ const EXTRA_CELEBS = [
   "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/jennifer-aniston.jpg",
   "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/kimk.jpg",
   "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/olivia-rodrigo.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/brad-pitt-2.jpeg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/brad_pitt_2019_by_glenn_francis.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/clooney2.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/jolie2.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/olivia_rodrigo_2.jpeg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/scarjo.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/sean-evavns.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/zendaya_mtv_awards_2.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/chriseans2.jpeg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/dua-lipa.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/images-1.jpeg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/meganfox.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/screenshot-2026-06-28-at-3.15.58-pm.png",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/screenshot-2026-06-28-at-3.15.50-pm.png",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/screenshot-2026-06-28-at-3.15.37-pm.png",
 ];
 
 // Your own photos of RANDOM (non-celebrity) people, to supplement the randomuser.me
 // / pravatar.cc pool below. Paste real File URLs here — placeholder repeats one URL
 // 10× for now. Treated exactly like the other strangers (random tile size, `cover`).
 const CUSTOM_PEOPLE = [
-  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/rando.jpg",
-  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/rando.jpg",
-  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/rando.jpg",
-  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/rando.jpg",
-  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/rando.jpg",
-  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/rando.jpg",
-  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/rando.jpg",
-  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/rando.jpg",
-  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/rando.jpg",
-  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/rando.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/rando1.jpeg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/rando2.jpeg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/rando3.jpeg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/random4.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/random5.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/random6.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/random7.jpeg",
 ];
 
 const BIG_SCROLL_VH = 1.2;   // how far down they must scroll before the trick can fire (in screen-heights)
