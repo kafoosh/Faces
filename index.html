@@ -47,16 +47,22 @@
      The card only ever centres in the MIDDLE band, so its position visually
      matches the middle tap zone — no divider lines or labels, just spacing. */
   #veil .third{ flex:1 1 0; min-height:0; display:flex;
-    align-items:center; justify-content:center; padding:24px; }
-  #card{ width:min(86vw,360px); max-height:100%; overflow:auto; text-align:center;
-    background:rgba(255,255,255,.94); border-radius:24px; padding:38px 30px;
+    align-items:center; justify-content:center; padding:clamp(4px,3vh,24px); }
+  /* Sized with clamp(min, preferred-in-vh, max) so the whole card shrinks or
+     grows to fit comfortably inside its band on any screen — no inner scrollbar. */
+  #card{ width:min(86vw,360px); max-height:100%; overflow:hidden; text-align:center;
+    background:rgba(255,255,255,.94); border-radius:24px;
+    padding:clamp(4px,2.5vh,38px) clamp(14px,6vw,30px);
     box-shadow:0 30px 80px rgba(0,0,0,.35); }
-  #card .face{ width:58px; height:58px; margin:0 auto 18px; border-radius:50%;
+  #card .face{ width:clamp(20px,5vh,58px); height:clamp(20px,5vh,58px);
+    margin:0 auto clamp(3px,1.4vh,18px); border-radius:50%;
     background:#ececf1; display:flex; align-items:center; justify-content:center; }
-  #card .face svg{ width:34px; height:34px; color:#9a9aa0; }
-  #card h2{ font-size:22px; font-weight:700; letter-spacing:-.01em; }
-  #card p{ margin-top:12px; font-size:16px; line-height:1.5; color:#3a3a3e; }
-  #card .hint{ margin-top:24px; font-size:12px; letter-spacing:.18em; text-transform:uppercase;
+  #card .face svg{ width:58%; height:58%; color:#9a9aa0; }
+  #card h2{ font-size:clamp(12px,3vh,22px); font-weight:700; letter-spacing:-.01em; line-height:1.15; }
+  #card p{ margin-top:clamp(2px,1vh,12px); font-size:clamp(10px,2.2vh,16px);
+    line-height:1.25; color:#3a3a3e; }
+  #card .hint{ margin-top:clamp(3px,1.6vh,24px); font-size:clamp(7px,1.4vh,12px);
+    letter-spacing:.18em; text-transform:uppercase;
     color:#b0b0b6; }
 </style>
 </head>
@@ -122,14 +128,6 @@
    The defaults point at the original web images so the app runs immediately,
    but web images CAN be deleted; your WordPress copies will not.            */
 
-const FORCE = {
-  dicaprio: "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/leonardo_dicaprio.jpg", // TOP third
-  obama:    "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/obama.jpg",              // MIDDLE third
-  scarlett: "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/scarlett.jpg",           // BOTTOM third
-};
-
-// A handful of other recognisable faces sprinkled into the initial wall.
-// (After the lock, these turn into strangers too — only the forced one stays.)
 const EXTRA_CELEBS = [
   "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/tom_cruise.jpg",
   "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/marilyn_monroe.jpg",
