@@ -38,12 +38,17 @@
 
   /* ---------- the welcome overlay (covert force selector) ---------- */
   #veil{ position:fixed; inset:0; z-index:50;
-    display:flex; align-items:center; justify-content:center; padding:24px;
+    display:flex; flex-direction:column;
     background:rgba(18,18,22,.46);
     -webkit-backdrop-filter:blur(22px) saturate(1.1); backdrop-filter:blur(22px) saturate(1.1);
     transition:opacity .8s ease; }
   #veil.dismiss{ opacity:0; pointer-events:none; }
-  #card{ width:min(86vw,360px); text-align:center;
+  /* Three equal bands = the same thirds the tap handler reads from e.clientY.
+     The card only ever centres in the MIDDLE band, so its position visually
+     matches the middle tap zone — no divider lines or labels, just spacing. */
+  #veil .third{ flex:1 1 0; min-height:0; display:flex;
+    align-items:center; justify-content:center; padding:24px; }
+  #card{ width:min(86vw,360px); max-height:100%; overflow:auto; text-align:center;
     background:rgba(255,255,255,.94); border-radius:24px; padding:38px 30px;
     box-shadow:0 30px 80px rgba(0,0,0,.35); }
   #card .face{ width:58px; height:58px; margin:0 auto 18px; border-radius:50%;
@@ -71,14 +76,18 @@
        into three full-width horizontal bands (top / middle / bottom third) that
        set which face will be forced. Nothing on screen hints at the bands. -->
   <div id="veil">
-    <div id="card">
-      <div class="face" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="9" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>
+    <div class="third" aria-hidden="true"></div>
+    <div class="third">
+      <div id="card">
+        <div class="face" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="9" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>
+        </div>
+        <h2>Welcome to Face Test</h2>
+        <p>How many of these people do you recognise?</p>
+        <div class="hint">Tap anywhere to begin</div>
       </div>
-      <h2>Welcome to Face Test</h2>
-      <p>How many of these people do you recognise?</p>
-      <div class="hint">Tap anywhere to begin</div>
     </div>
+    <div class="third" aria-hidden="true"></div>
   </div>
 
 <script>
@@ -108,6 +117,8 @@
    Library, then paste their File URLs below (replacing the defaults).
    STEP 2 — Upload the twelve files in /source-images/celebs/ the same way and
    paste their URLs into EXTRA_CELEBS (or leave the defaults — they work too).
+   STEP 3 — Got your own photos of regular (non-celebrity) people? Paste their
+   URLs into CUSTOM_PEOPLE below to supplement the randomuser.me/pravatar pool.
    The defaults point at the original web images so the app runs immediately,
    but web images CAN be deleted; your WordPress copies will not.            */
 
@@ -124,14 +135,11 @@ const EXTRA_CELEBS = [
   "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/marilyn_monroe.jpg",
   "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/beyonce.jpg",
   "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/elizabeth_ii.jpg",
-  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/einstein.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/screenshot-2026-06-28-at-2.52.43-pm.png",
   "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/morgan_freeman.jpg",
   "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/audrey_hepburn.jpg",
-  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/leonardo_dicaprio.jpg",
   "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/keanu_reeves.jpg",
-  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/obama.jpg",
   "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/oprah_winfrey.jpg",
-  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/scarlett.jpg",
   "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/f_t2ksfwqaakfuo.jpg",
   "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/timothee-chalamet.jpg",
   "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/sabrina-carpenter.jpg",
@@ -145,6 +153,34 @@ const EXTRA_CELEBS = [
   "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/jennifer-aniston.jpg",
   "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/kimk.jpg",
   "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/olivia-rodrigo.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/brad-pitt-2.jpeg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/brad_pitt_2019_by_glenn_francis.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/clooney2.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/jolie2.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/olivia_rodrigo_2.jpeg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/scarjo.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/sean-evavns.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/zendaya_mtv_awards_2.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/chriseans2.jpeg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/dua-lipa.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/images-1.jpeg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/meganfox.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/screenshot-2026-06-28-at-3.15.58-pm.png",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/screenshot-2026-06-28-at-3.15.50-pm.png",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/screenshot-2026-06-28-at-3.15.37-pm.png",
+];
+
+// Your own photos of RANDOM (non-celebrity) people, to supplement the randomuser.me
+// / pravatar.cc pool below. Paste real File URLs here — placeholder repeats one URL
+// 10× for now. Treated exactly like the other strangers (random tile size, `cover`).
+const CUSTOM_PEOPLE = [
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/rando1.jpeg",
+  "hhttps://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/rando2.jpeg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/rando3.jpeg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/random4.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/random5.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/random6.jpg",
+  "https://isometricplayingcards-nralz.wordpress.com/wp-content/uploads/2026/06/random7.jpeg",
 ];
 
 const BIG_SCROLL_VH = 1.2;   // how far down they must scroll before the trick can fire (in screen-heights)
@@ -170,9 +206,10 @@ shuffle(RU_POOL);
 let ruIdx = 0;
 function randomFace(){ return RU_POOL[ruIdx++ % RU_POOL.length]; }   // reliable fallback headshot
 
-// Full stranger pool = randomuser + pravatar, shuffled together so the two
-// sources interleave instead of appearing in clumps. Cycles, no near repeats.
-const FACE_POOL = [...RU_POOL];
+// Full stranger pool = randomuser + pravatar + your own CUSTOM_PEOPLE uploads,
+// shuffled together so all sources interleave instead of appearing in clumps.
+// Cycles, no near repeats.
+const FACE_POOL = [...RU_POOL, ...CUSTOM_PEOPLE];
 for (let i = 1; i <= 70; i++) FACE_POOL.push(`https://i.pravatar.cc/512?img=${i}`);
 shuffle(FACE_POOL);
 let faceIdx = 0;
@@ -198,26 +235,28 @@ const sentinel = document.getElementById("sentinel");
 let revealed = false;                  // after the swap, newly-loaded tiles are strangers only
 
 // Celebrities cycle through a shuffled list so they spread out (no clustering).
-const CELEB_POOL = shuffle([FORCE.dicaprio, FORCE.obama, FORCE.scarlett, ...EXTRA_CELEBS]);
+// The three FORCE candidates are EXCLUDED here — they must only ever appear via
+// the swap itself, never sprinkled in as a "regular" celebrity on the wall.
+const FORCE_URLS = new Set(Object.values(FORCE));
+const CELEB_POOL = shuffle(EXTRA_CELEBS.filter(u => !FORCE_URLS.has(u)));
 let celebIdx = 0;
 function nextCeleb(){ return CELEB_POOL[celebIdx++ % CELEB_POOL.length]; }
 
 // After the reveal we KEEP seeding celebrities throughout the wall (off-screen and
 // in newly-loaded batches) so it stays believable that the spectator could have
-// stopped on a famous face anywhere — but never the forced person again, so the
-// one they landed on stays unique. Built lazily once `force` is known.
+// stopped on a famous face anywhere — but never a FORCE candidate (those stay
+// swap-only). Built lazily, shared across reveals since CELEB_POOL never changes.
 let seedPool = [], seedIdx = 0;
 function nextSeedCeleb(){
-  if (!seedPool.length){
-    seedPool = shuffle([...new Set(CELEB_POOL)].filter(u => u !== force));
-  }
+  if (!seedPool.length) seedPool = shuffle([...new Set(CELEB_POOL)]);
   return seedPool[seedIdx++ % seedPool.length];
 }
 
 // Learn each celebrity / force image's TRUE aspect ratio up front, so its tile is
 // sized to match and the photo is NEVER cropped. Resolves on load OR error so a
-// slow / missing image can't stall the wall.
-const CELEB_URLS = [...new Set(CELEB_POOL)];
+// slow / missing image can't stall the wall. FORCE images are added explicitly
+// since they're excluded from CELEB_POOL above.
+const CELEB_URLS = [...new Set([...FORCE_URLS, ...CELEB_POOL])];
 const celebAR = {};
 function preloadCelebs(){
   return Promise.all(CELEB_URLS.map(url => new Promise(res => {
@@ -369,8 +408,6 @@ function chooseForcedTile(){
   return pick;
 }
 
-const isStranger = u => /randomuser\.me|i\.pravatar\.cc/.test(u);
-
 function doSwap(){
   if (swapped || !armed || !bigScrolled || !force) return;
   const target = chooseForcedTile();
@@ -383,9 +420,11 @@ function doSwap(){
   // of faces — it must look like they could have stopped on anyone, anywhere). The
   // only off-screen change: if a tile happens to show the forced person, re-seed it
   // to a different celeb so the landed face stays unique on the whole wall.
-  grid.querySelectorAll(".tile").forEach(t => {
+  // Selecting by the `.celeb` class (not URL/host) keeps this correct even though
+  // CUSTOM_PEOPLE strangers are hosted on the same domain as the celebrities.
+  grid.querySelectorAll(".tile.celeb").forEach(t => {
     const img = t.querySelector("img");
-    if (!img || img === target.img || isStranger(img.src)) return;   // skip target + existing strangers
+    if (!img || img === target.img) return;             // skip the target only
     const r = t.getBoundingClientRect();
     const onScreen = r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth;
     if (onScreen){
