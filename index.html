@@ -426,11 +426,15 @@ function doSwap(){
   // to a different celeb so the landed face stays unique on the whole wall.
   // Selecting by the `.celeb` class (not URL/host) keeps this correct even though
   // CUSTOM_PEOPLE strangers are hosted on the same domain as the celebrities.
+  // Slightly enlarge the "safe" area beyond the strict viewport so celebrities
+  // peeking in just past an edge (e.g. along the bottom fold) are cleaned too.
+  // Celebs further out still load and stay, so scrolling reveals a full wall.
+  const safe = innerHeight * 0.25;
   grid.querySelectorAll(".tile.celeb").forEach(t => {
     const img = t.querySelector("img");
     if (!img || img === target.img) return;             // skip the target only
     const r = t.getBoundingClientRect();
-    const onScreen = r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth;
+    const onScreen = r.bottom > -safe && r.top < innerHeight + safe && r.right > 0 && r.left < innerWidth;
     if (onScreen){
       // Keep the tile's size (no reflow); a curated SFW face fills it via cover.
       t.classList.remove("celeb");
