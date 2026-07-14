@@ -57,22 +57,24 @@ the URL reads plain `faces.oddpaq.com`.
 
 #### The performer signal
 
-The welcome card tells you whether the named photo is loaded, via one word:
+The welcome card tells you whether the named photo is loaded, via the **circle behind the
+little face icon** at the top of the card:
 
-> How many of these **people** do you recognise?
+- **Grey circle visible** (the normal look) — photo found and fully downloaded. The force
+  is armed. Hand the phone over.
+- **Circle white / vanished** (the icon floats alone on the card) — not ready: still
+  loading (give it a second) or the lookup failed (no such article, article has no photo,
+  or no signal). If it stays white, nothing breaks — the app silently falls back to the
+  classic three-way tap force above.
 
-- **"people"** — photo found and fully downloaded. The force is armed. Hand the phone over.
-- **"faces"** — not ready: still loading (give it a second) or the lookup failed (no
-  such article, article has no photo, or no signal). If it stays on "faces", nothing
-  breaks — the app silently falls back to the classic three-way tap force above.
-
-A spectator sees nothing unusual either way; both sentences read naturally.
+A spectator sees nothing unusual either way; a plain icon just looks like the design.
 
 ## Performing it
 
 1. Ask the spectator to name (or think of — see below) a celebrity.
 2. Out of their view, open `faces.oddpaq.com/?=theirname`.
-3. Wait for the welcome card to say "**people**" (typically under a second).
+3. Wait for the grey circle to appear behind the welcome card's face icon (typically
+   1–2 seconds).
 4. Hand the phone over: "It's a face-recognition test — tap to begin, and just keep
    scrolling. Tell me roughly how many you recognise."
 5. Let them scroll a good way (the trick arms after ~1.2 screen-heights of scrolling).
@@ -83,8 +85,8 @@ A spectator sees nothing unusual either way; both sentences read naturally.
 
 Tips:
 
-- **Don't skip step 3.** "people" is your confirmation the exact photo is on the phone;
-  after that, the reveal works even with no signal.
+- **Don't skip step 3.** The grey circle is your confirmation the exact photo is on the
+  phone; after that, the reveal works even with no signal.
 - The swap fires on phone lock, switching apps, or (desktop) clicking another window or
   switching tabs — whichever comes first after the big scroll.
 - The force stays put afterwards. Scrolling up and down still shows other celebrities
@@ -107,7 +109,7 @@ Tips:
   typed name letter-for-letter (ignoring spacing, accents, and "(actor)"-style suffixes)
   wins outright; popularity order breaks ties. The winner's lead image is fetched at 900px.
 - The image is fully preloaded — and its true aspect ratio recorded, so its tile is sized
-  to show the photo uncropped — before the card's wording flips to "people".
+  to show the photo uncropped — before the icon circle turns back to grey.
 - Every request is timeout-capped; any failure quietly leaves the three-way tap force in
   charge.
 

@@ -89,7 +89,7 @@
           <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="9" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>
         </div>
         <h2>Welcome to Face Test</h2>
-        <p>How many of these <span id="subj">people</span> do you recognise?</p>
+        <p>How many of these people do you recognise?</p>
         <div class="hint">Tap anywhere to begin</div>
       </div>
     </div>
@@ -111,10 +111,11 @@
 
      OR, name anyone in the URL: faces.oddpaq.com/?=dualipa fetches that
      person's Wikipedia lead photo and forces it no matter where the
-     spectator taps. Performer signal on the welcome card: "…these PEOPLE…"
-     = photo found & loaded; "…these FACES…" = still loading or lookup
-     failed (falls back to the classic three-way tap force). The parameter
-     is scrubbed from the address bar immediately, before anyone can see it.
+     spectator taps. Performer signal: the circle behind the face icon on
+     the welcome card. Normal grey = photo found & loaded; WHITE (circle
+     vanishes into the card) = still loading or lookup failed (falls back
+     to the classic three-way tap force). The parameter is scrubbed from
+     the address bar immediately, before anyone can see it.
 
    ── THE MAGIC ─────────────────────────────────────────────────────────────
      After a BIG scroll, when the phone locks / the user swipes the browser
@@ -399,8 +400,8 @@ veil.addEventListener("click", (e) => {
    Resolves the name to that person's Wikipedia lead photo, fully preloads it,
    then overrides the three-thirds tap force. Everything downstream (big
    scroll → lock → swap) is unchanged. Any failure — no such article, article
-   with no photo, network down — is silent: the word on the welcome card stays
-   "faces" and the classic three-way force still works.
+   with no photo, network down — is silent: the icon circle stays white and
+   the classic three-way force still works.
    ========================================================================== */
 function readForceParam(){
   if (location.search.length < 2) return null;
@@ -518,14 +519,17 @@ async function resolveUrlForce(name){
   const forceName = readForceParam();
   if (forceName){
     history.replaceState(null, "", location.pathname); // scrub the tell from the URL bar
-    const subj = document.getElementById("subj");
-    subj.textContent = "faces";                        // pessimistic until the photo is IN
+    // Performer signal = the circle behind the card's face icon. White (it
+    // melts invisibly into the white card) until the photo is IN; back to its
+    // normal grey once loaded & armed.
+    const faceEl = document.querySelector("#card .face");
+    faceEl.style.background = "#fff";                  // pessimistic until the photo is IN
     resolveUrlForce(forceName).then(({ url, ar }) => {
       urlForce = url;
       celebAR[url] = ar;
       if (armed && !swapped) force = url;              // resolved after the tap — still honour it
-      subj.textContent = "people";                     // performer signal: loaded & armed
-    }).catch(() => {});                                // stays "faces" → three-way force works
+      faceEl.style.background = "";                    // normal grey: loaded & armed
+    }).catch(() => {});                                // stays white → three-way force works
   }
 }
 
