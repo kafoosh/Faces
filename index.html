@@ -89,7 +89,7 @@
           <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="9" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>
         </div>
         <h2>Welcome to Face Test</h2>
-        <p>How many of these people do you recognise?</p>
+        <p>How many of these <span id="subj">people</span> do you recognise?</p>
         <div class="hint">Tap anywhere to begin</div>
       </div>
     </div>
@@ -105,9 +105,16 @@
    taps the welcome overlay (top/middle/bottom third of the screen).
 
    ── HOW THE FORCE IS SET ──────────────────────────────────────────────────
-     Top third    → Einstein
+     Top third    → DiCaprio
      Middle third → Obama
      Bottom third → Scarlett Johansson
+
+     OR, name anyone in the URL: faces.oddpaq.com/?=dualipa fetches that
+     person's Wikipedia lead photo and forces it no matter where the
+     spectator taps. Performer signal on the welcome card: "…these PEOPLE…"
+     = photo found & loaded; "…these FACES…" = still loading or lookup
+     failed (falls back to the classic three-way tap force). The parameter
+     is scrubbed from the address bar immediately, before anyone can see it.
 
    ── THE MAGIC ─────────────────────────────────────────────────────────────
      After a BIG scroll, when the phone locks / the user swipes the browser
@@ -367,6 +374,7 @@ new IntersectionObserver((e) => { if (e[0].isIntersecting) addBatch(BATCH); },
    THE COVERT FORCE — the welcome overlay
    ========================================================================== */
 let force = null, armed = false, bigScrolled = false, swapped = false, dismissed = false;
+let urlForce = null;                   // resolved image URL from ?=<name>, when present
 
 const veil = document.getElementById("veil");
 veil.addEventListener("click", (e) => {
@@ -374,15 +382,84 @@ veil.addEventListener("click", (e) => {
   dismissed = true;
 
   const y = e.clientY, h = window.innerHeight;        // which third did they tap?
-  force = (y < h / 3)       ? FORCE.dicaprio
-        : (y < (2 * h) / 3) ? FORCE.obama
-        :                     FORCE.scarlett;
+  force = urlForce                                    // URL-named force wins over the thirds
+        || ((y < h / 3)       ? FORCE.dicaprio
+        :   (y < (2 * h) / 3) ? FORCE.obama
+        :                       FORCE.scarlett);
   armed = true;
 
   veil.classList.add("dismiss");
   document.body.classList.remove("locked");           // unlock scrolling
   setTimeout(() => veil.remove(), 850);
 });
+
+/* ==========================================================================
+   URL-NAMED FORCE — faces.oddpaq.com/?=dualipa  (also ?=dua-lipa, ?=dua+lipa,
+   ?dualipa, or a direct image URL: ?=https://…/photo.jpg)
+   Resolves the name to that person's Wikipedia lead photo, fully preloads it,
+   then overrides the three-thirds tap force. Everything downstream (big
+   scroll → lock → swap) is unchanged. Any failure — no such article, article
+   with no photo, network down — is silent: the word on the welcome card stays
+   "faces" and the classic three-way force still works.
+   ========================================================================== */
+function readForceParam(){
+  if (location.search.length < 2) return null;
+  const sp = new URLSearchParams(location.search);
+  let v = (sp.get("") || "").trim();                  // ?=dua+lipa (empty key)
+  if (!v) for (const [k, val] of sp)                  // bare ?dualipa
+    if (!val){ v = k.trim(); break; }
+  return v || null;
+}
+
+function withTimeout(p, ms){
+  return Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), ms))]);
+}
+
+// Resolves only when the photo is fully downloaded (so the reveal is instant
+// and the tile can be sized to the photo's true aspect ratio).
+function preloadForce(url){
+  return withTimeout(new Promise((res, rej) => {
+    const im = new Image(); im.referrerPolicy = "no-referrer";
+    im.onload  = () => im.naturalWidth ? res({ url, ar: im.naturalWidth / im.naturalHeight })
+                                       : rej(new Error("empty image"));
+    im.onerror = () => rej(new Error("image failed"));
+    im.src = url;
+  }), 10000);
+}
+
+// One request: full-text search (fuzzy — "dualipa" finds Dua Lipa) + that
+// article's lead image at 900px. No API key; `origin=*` enables CORS.
+const WIKI_API = "https://en.wikipedia.org/w/api.php" +
+  "?action=query&generator=search&gsrnamespace=0&gsrlimit=1" +
+  "&prop=pageimages&piprop=thumbnail&pithumbsize=900&format=json&origin=*&gsrsearch=";
+
+async function resolveUrlForce(name){
+  if (/^https?:\/\//i.test(name)) return preloadForce(name);   // direct image URL escape hatch
+  const q = name.replace(/[-_.]+/g, " ").trim();
+  const r = await withTimeout(fetch(WIKI_API + encodeURIComponent(q)), 8000);
+  if (!r.ok) throw new Error("wiki http " + r.status);
+  const data = await r.json();
+  const pages = data && data.query && data.query.pages;
+  const page  = pages && Object.values(pages)[0];
+  const src   = page && page.thumbnail && page.thumbnail.source;
+  if (!src) throw new Error("no photo found for: " + q);
+  return preloadForce(src);
+}
+
+{
+  const forceName = readForceParam();
+  if (forceName){
+    history.replaceState(null, "", location.pathname); // scrub the tell from the URL bar
+    const subj = document.getElementById("subj");
+    subj.textContent = "faces";                        // pessimistic until the photo is IN
+    resolveUrlForce(forceName).then(({ url, ar }) => {
+      urlForce = url;
+      celebAR[url] = ar;
+      if (armed && !swapped) force = url;              // resolved after the tap — still honour it
+      subj.textContent = "people";                     // performer signal: loaded & armed
+    }).catch(() => {});                                // stays "faces" → three-way force works
+  }
+}
 
 /* ==========================================================================
    THE TRIGGER — big scroll, then lock / leave
@@ -459,7 +536,7 @@ window.addEventListener("blur",    doSwap);
 window.addEventListener("pagehide", doSwap);
 
 /* Manual hook for verification only (lets a test drive the swap deterministically). */
-window.__faceTest = { doSwap, addBatch, state: () => ({ force, armed, bigScrolled, swapped, revealed }),
+window.__faceTest = { doSwap, addBatch, state: () => ({ force, armed, bigScrolled, swapped, revealed, urlForce }),
                       arm: (f) => { force = f; armed = true; bigScrolled = true; } };
 </script>
 </body>
