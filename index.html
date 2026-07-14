@@ -427,23 +427,91 @@ function preloadForce(url){
   }), 10000);
 }
 
-// One request: full-text search (fuzzy — "dualipa" finds Dua Lipa) + that
-// article's lead image at 900px. No API key; `origin=*` enables CORS.
-const WIKI_API = "https://en.wikipedia.org/w/api.php" +
-  "?action=query&generator=search&gsrnamespace=0&gsrlimit=1" +
-  "&prop=pageimages&piprop=thumbnail&pithumbsize=900&format=json&origin=*&gsrsearch=";
+// All lookups go through the MediaWiki API — no key; `origin=*` enables CORS.
+const WIKI_API = "https://en.wikipedia.org/w/api.php?format=json&origin=*&";
+function wikiGet(params){
+  return withTimeout(fetch(WIKI_API + params), 8000).then(r => {
+    if (!r.ok) throw new Error("wiki http " + r.status);
+    return r.json();
+  });
+}
+
+// "Tom Holland (actor)" → "tomholland": lowercase, drop accents, punctuation
+// and any trailing "(disambiguator)", so squashed input like ?=tomholland can
+// be compared letter-for-letter against article titles.
+const squash = s => s.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "");
+const personName = t => t.replace(/\s+\([^)]*\)\s*$/, "");
+
+// Gather candidate articles from two angles. Taking full-text search's #1 hit
+// blindly fails on squashed names — "tomholland" text-matches pages quoting
+// his @tomholland handle rather than the person — so we collect a slate and
+// rank it ourselves in resolveUrlForce.
+async function candidateTitles(q){
+  const titles = [], seen = new Set();
+  const push = t => { if (!t) return; const k = squash(t); if (!seen.has(k)){ seen.add(k); titles.push(t); } };
+  // 1. Completion suggester (the search-box dropdown): fuzzy, popularity-
+  //    ranked, and the best handler of run-together names. Goes first so its
+  //    order dominates tie-breaks.
+  await wikiGet("action=opensearch&redirects=resolve&limit=8&search=" + encodeURIComponent(q))
+    .then(os => (os[1] || []).forEach(push)).catch(() => {});
+  // 2. Full-text search, re-queried with its "did you mean" suggestion when
+  //    one is offered (e.g. "tomholland" → "tom holland").
+  try {
+    const fs = await wikiGet("action=query&list=search&srlimit=8&srinfo=suggestion&srprop=&srsearch=" + encodeURIComponent(q));
+    ((fs.query || {}).search || []).forEach(p => push(p.title));
+    // NB: compare case-only, NOT via squash() — a suggestion that differs just
+    // by spacing ("tomholland" → "tom holland") is exactly the one we want.
+    const sug = fs.query && fs.query.searchinfo && fs.query.searchinfo.suggestion;
+    if (sug && sug.toLowerCase() !== q.toLowerCase()){
+      const fs2 = await wikiGet("action=query&list=search&srlimit=8&srprop=&srsearch=" + encodeURIComponent(sug));
+      ((fs2.query || {}).search || []).forEach(p => push(p.title));
+    }
+  } catch (e) {}
+  return titles.slice(0, 12);
+}
 
 async function resolveUrlForce(name){
   if (/^https?:\/\//i.test(name)) return preloadForce(name);   // direct image URL escape hatch
   const q = name.replace(/[-_.]+/g, " ").trim();
-  const r = await withTimeout(fetch(WIKI_API + encodeURIComponent(q)), 8000);
-  if (!r.ok) throw new Error("wiki http " + r.status);
-  const data = await r.json();
-  const pages = data && data.query && data.query.pages;
-  const page  = pages && Object.values(pages)[0];
-  const src   = page && page.thumbnail && page.thumbnail.source;
-  if (!src) throw new Error("no photo found for: " + q);
-  return preloadForce(src);
+  const titles = await candidateTitles(q);
+  if (!titles.length) throw new Error("no articles found for: " + q);
+
+  // One batched lookup: lead image + disambiguation flag for every candidate.
+  const data = await wikiGet("action=query&redirects=1&prop=pageimages%7Cpageprops" +
+    "&piprop=thumbnail&pithumbsize=900&ppprop=disambiguation&titles=" +
+    encodeURIComponent(titles.join("|")));
+  const pages = Object.values((data.query || {}).pages || {});
+
+  // Redirects/normalisation rename pages in the response; walk each final
+  // title back to the candidate that produced it so candidate order
+  // (≈ popularity) stays usable for ranking.
+  const aliasFrom = {};
+  [...((data.query || {}).normalized || []), ...((data.query || {}).redirects || [])]
+    .forEach(m => { aliasFrom[m.to] = m.from; });
+  const orderOf = page => {
+    let t = page.title, hops = 0, i;
+    while ((i = titles.findIndex(c => squash(c) === squash(t))) < 0 && aliasFrom[t] && hops++ < 3)
+      t = aliasFrom[t];
+    return i < 0 ? titles.length : i;
+  };
+
+  // Rank: must have a photo and not be a disambiguation page; an exact name
+  // match (ignoring the "(actor)"-style suffix) beats everything, then
+  // candidate order breaks ties — so ?=tomholland lands on "Tom Holland
+  // (actor)", not the disambiguation page or a stray text match.
+  const qk = squash(q);
+  let best = null, bestScore = -Infinity;
+  for (const p of pages){
+    if (!p || !p.thumbnail || !p.thumbnail.source) continue;
+    if (p.pageprops && "disambiguation" in p.pageprops) continue;
+    const nk = squash(personName(p.title));
+    let score = -orderOf(p);
+    if (nk === qk) score += 100;
+    else if (nk.startsWith(qk) || qk.startsWith(nk)) score += 30;
+    if (score > bestScore){ bestScore = score; best = p; }
+  }
+  if (!best) throw new Error("no photo found for: " + q);
+  return preloadForce(best.thumbnail.source);
 }
 
 {
