@@ -39,10 +39,12 @@ faces.oddpaq.com/?=dua-lipa
 faces.oddpaq.com/?=pedro+pascal
 ```
 
-Spaces, dashes, underscores, `+`, or no separator at all — all fine. The lookup is a fuzzy
-Wikipedia search, so `dualipa` finds Dua Lipa and minor typos usually resolve. Anyone with
-a Wikipedia article that has a photo works: actors, musicians, athletes, politicians,
-historical figures.
+Spaces, dashes, underscores, dots, `+`, or no separator at all — all fine. The lookup is
+fuzzy: run-together names (`tomholland`, `dualipa`) and minor typos usually resolve, and
+shared names prefer the person you mean (`tomholland` → Tom Holland the actor, not the
+disambiguation page). Anyone with a Wikipedia article that has a photo works: actors,
+musicians, athletes, politicians, historical figures. Separated names (`tom-holland`) are
+still the most reliable form if a squashed one ever misses.
 
 You can also force a **specific photo** by passing a direct image URL:
 
@@ -96,12 +98,18 @@ Tips:
 
 - `?=name` is parsed from the query string, then removed with `history.replaceState`
   (no reload, no history entry).
-- One CORS request to the MediaWiki API (`generator=search` + `prop=pageimages`) resolves
-  the fuzzy name to an article and returns its lead image at 900px. No API key needed.
+- Candidate articles are gathered from two MediaWiki API angles (keyless, CORS via
+  `origin=*`): the completion suggester (`action=opensearch` — the search-box dropdown,
+  fuzzy and popularity-ranked, good with run-together names) and full-text search,
+  re-queried with its "did you mean" suggestion when one is offered.
+- Candidates are then ranked client-side in one batched `pageimages`+`pageprops` lookup:
+  disambiguation pages and articles without a photo are skipped; a title that matches the
+  typed name letter-for-letter (ignoring spacing, accents, and "(actor)"-style suffixes)
+  wins outright; popularity order breaks ties. The winner's lead image is fetched at 900px.
 - The image is fully preloaded — and its true aspect ratio recorded, so its tile is sized
   to show the photo uncropped — before the card's wording flips to "people".
-- Lookup and download are capped by timeouts (8s + 10s); any failure quietly leaves the
-  three-way tap force in charge.
+- Every request is timeout-capped; any failure quietly leaves the three-way tap force in
+  charge.
 
 ## Development
 
