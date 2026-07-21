@@ -1,23 +1,31 @@
 # Face Test
 
-A single-page "wall of faces" magic app, live at **[faces.oddpaq.com](https://faces.oddpaq.com)**.
+Face Test is a one-page magic app. It shows a wall of faces. The app is live at
+**[faces.oddpaq.com](https://faces.oddpaq.com)**.
 
-The spectator scrolls an endless Pinterest-style wall of faces — mostly strangers, with
-recognisable celebrities sprinkled in. When the phone locks (or the tab goes inactive),
-every celebrity in the landed view silently becomes a stranger **except one large, central
-tile, which becomes the forced person**. Off-screen celebrities stay put, so scrolling away
-still looks like a normal wall — they could have stopped on anyone.
+The spectator scrolls a Pinterest-style wall of faces that has no end. Most faces are
+strangers. Some faces are celebrities. When the phone locks (or the browser tab becomes
+inactive), the app changes each celebrity in the visible view to a stranger. Only one
+large, central tile is different: **that tile changes to the forced person**. Celebrities
+that are not in the visible view do not change. Thus, if the spectator scrolls away, the
+wall looks normal. It looks as if the spectator could stop on any face.
 
-The whole app is one file (`index.html`) hosted on GitHub Pages. No backend, no build step.
+The app is one file (`index.html`) on GitHub Pages. The app has no backend and no build
+step.
 
-## Choosing the force
+Note: "Force" is a magic term. The force is the item that the performer makes the
+spectator get. The "forced person" is the celebrity that the trick shows at the end (the
+"reveal").
 
-There are two ways to set who gets forced.
+## How to set the force
 
-### 1. The classic three-way tap force
+There are two methods to set the forced person.
 
-The welcome overlay ("Tap anywhere to begin") is secretly split into three full-width
-horizontal bands. Where the screen is tapped sets the force:
+### 1. The three-zone tap force
+
+The welcome overlay ("Tap anywhere to begin") has three horizontal zones. Each zone has
+the full width of the screen. The zones are not visible. The zone that gets the tap sets
+the force:
 
 | Tap zone | Forced person |
 |---|---|
@@ -25,13 +33,17 @@ horizontal bands. Where the screen is tapped sets the force:
 | Middle third | Barack Obama |
 | Bottom third | Scarlett Johansson |
 
-Nothing on screen hints at the bands. Either you tap to begin yourself before handing the
-phone over, or you direct where the spectator taps ("tap the card to begin" → middle).
+The screen shows no marks for the zones. You have two options:
 
-### 2. Name anyone in the URL
+- Tap the screen before you give the phone to the spectator.
+- Tell the spectator where to tap. Example: "Tap the card to begin" points to the middle
+  zone.
 
-Append `?=` plus a name to the URL and the app fetches that person's **Wikipedia lead
-photo** and uses it as the force, no matter where the welcome screen is tapped:
+### 2. Set a name in the URL
+
+Add `?=` and a name to the URL. The app then gets the **lead photo of the Wikipedia
+article** for that person. The app uses that photo as the force. The tap position on the
+welcome screen then has no effect.
 
 ```
 faces.oddpaq.com/?=dualipa
@@ -39,88 +51,102 @@ faces.oddpaq.com/?=dua-lipa
 faces.oddpaq.com/?=pedro+pascal
 ```
 
-Spaces, dashes, underscores, dots, `+`, or no separator at all — all fine. The lookup is
-fuzzy: run-together names (`tomholland`, `dualipa`) and minor typos usually resolve, and
-shared names prefer the person you mean (`tomholland` → Tom Holland the actor, not the
-disambiguation page). Anyone with a Wikipedia article that has a photo works: actors,
-musicians, athletes, politicians, historical figures. Separated names (`tom-holland`) are
-still the most reliable form if a squashed one ever misses.
+You can use spaces, dashes, underscores, dots, `+` signs, or no separator. The search
+accepts small errors: names with no separator (`tomholland`, `dualipa`) and small
+spelling errors usually give the correct result. If two persons have the same name, the
+app selects the most probable person (`tomholland` gives Tom Holland the actor, not the
+disambiguation page). The app can find each person who has a Wikipedia article with a
+photo: actors, musicians, athletes, politicians, and historical persons. Names with
+separators (`tom-holland`) are the most reliable. Use them if a name with no separator
+does not give a result.
 
-You can also force a **specific photo** by passing a direct image URL:
+You can also force a **specified photo**. For this, use a direct image URL:
 
 ```
 faces.oddpaq.com/?=https://example.com/photo.jpg
 ```
 
-**The parameter is scrubbed from the address bar immediately** — by the time anyone looks,
-the URL reads plain `faces.oddpaq.com`.
+**The app immediately removes the parameter from the address bar.** When a person
+examines the URL, the URL shows only `faces.oddpaq.com`.
 
 #### The performer signal
 
-The welcome card tells you whether the named photo is loaded, via the **circle behind the
-little face icon** at the top of the card:
+The welcome card shows you if the photo is loaded. Look at the **circle behind the small
+face icon** at the top of the card:
 
-- **Grey circle visible** (the normal look) — photo found and fully downloaded. The force
-  is armed. Hand the phone over.
-- **Circle white / vanished** (the icon floats alone on the card) — not ready: still
-  loading (give it a second) or the lookup failed (no such article, article has no photo,
-  or no signal). If it stays white, nothing breaks — the app silently falls back to the
-  classic three-way tap force above.
+- **The grey circle is visible** (the usual condition). The app found the photo and
+  downloaded it fully. The force is armed. You can give the phone to the spectator.
+- **The circle is white or not visible** (only the icon shows on the card). The app is
+  not ready. Possible causes: the download continues (wait one or two seconds), or the
+  search failed (there is no article, the article has no photo, or there is no network
+  signal). If the circle stays white, the app continues to operate correctly. The app
+  then uses the three-zone tap force.
 
-A spectator sees nothing unusual either way; a plain icon just looks like the design.
+The spectator does not see a difference in the two conditions. An icon with no circle
+looks like a part of the design.
 
-## Performing it
+## How to do the trick
 
-1. Ask the spectator to name (or think of — see below) a celebrity.
-2. Out of their view, open `faces.oddpaq.com/?=theirname`.
-3. Wait for the grey circle to appear behind the welcome card's face icon (typically
-   1–2 seconds).
-4. Hand the phone over: "It's a face-recognition test — tap to begin, and just keep
-   scrolling. Tell me roughly how many you recognise."
-5. Let them scroll a good way (the trick arms after ~1.2 screen-heights of scrolling).
-6. Have them lock the phone / put it face-down / switch away: "OK, lock it for a second
-   so you're not tempted to keep counting."
-7. Build the reveal however you like. When the screen comes back on, the view they
-   stopped on now contains exactly one celebrity — theirs — big and central.
+1. Ask the spectator for the name of a celebrity. (The spectator can also only think of
+   one. Refer to the tips below.)
+2. Open `faces.oddpaq.com/?=theirname`. Make sure that the spectator cannot see the
+   screen.
+3. Wait until the grey circle shows behind the face icon on the welcome card. This
+   usually takes one to two seconds.
+4. Give the phone to the spectator. Say: "This is a face-recognition test. Tap to begin,
+   then scroll. Tell me approximately how many faces you know."
+5. Let the spectator scroll a sufficient distance. The trick becomes armed after
+   approximately 1.2 screen-heights of scroll.
+6. Tell the spectator to lock the phone, to put it face-down, or to go to a different
+   app. Example: "Lock the phone for a moment, so you do not continue to count."
+7. Do the reveal in the way that you prefer. When the screen comes on again, the view
+   where the spectator stopped has only one celebrity: the forced person, large and
+   central.
 
 Tips:
 
-- **Don't skip step 3.** The grey circle is your confirmation the exact photo is on the
-  phone; after that, the reveal works even with no signal.
-- The swap fires on phone lock, switching apps, or (desktop) clicking another window or
-  switching tabs — whichever comes first after the big scroll.
-- The force stays put afterwards. Scrolling up and down still shows other celebrities
-  elsewhere on the wall, so it looks like they could have landed anywhere. The forced
-  person never appears twice.
-- Reloading the page resets everything — you get one reveal per load.
-- Wikipedia's lead photo is usually a clean, recognisable headshot, but you don't choose
-  it. If a particular photo matters, use the direct-image-URL form instead.
+- **Do not omit step 3.** The grey circle shows that the correct photo is on the phone.
+  After that point, the reveal operates with no network signal.
+- The swap occurs at the first of these events after the long scroll: the phone locks,
+  the spectator goes to a different app, or (on a desktop) the spectator clicks a
+  different window or tab.
+- The force stays in its position after the swap. When the spectator scrolls up and down,
+  other celebrities show in other areas of the wall. Thus it looks as if the spectator
+  could stop on any face. The forced person does not show two times.
+- When you load the page again, the app resets. Each page load gives one reveal.
+- The lead photo from Wikipedia is usually a clear photo of the face, but you cannot
+  select it. If you must have a specified photo, use the direct image URL.
 
-## How the URL force works (technical)
+## How the URL force operates (technical)
 
-- `?=name` is parsed from the query string, then removed with `history.replaceState`
-  (no reload, no history entry).
-- Candidate articles are gathered from two MediaWiki API angles (keyless, CORS via
-  `origin=*`): the completion suggester (`action=opensearch` — the search-box dropdown,
-  fuzzy and popularity-ranked, good with run-together names) and full-text search,
-  re-queried with its "did you mean" suggestion when one is offered.
-- Candidates are then ranked client-side in one batched `pageimages`+`pageprops` lookup:
-  disambiguation pages and articles without a photo are skipped; a title that matches the
-  typed name letter-for-letter (ignoring spacing, accents, and "(actor)"-style suffixes)
-  wins outright; popularity order breaks ties. The winner's lead image is fetched at 900px.
-- The image is fully preloaded — and its true aspect ratio recorded, so its tile is sized
-  to show the photo uncropped — before the icon circle turns back to grey.
-- Every request is timeout-capped; any failure quietly leaves the three-way tap force in
-  charge.
+- The app reads `?=name` from the query string. The app then removes it with
+  `history.replaceState` (no reload, no history entry).
+- The app gets candidate articles from two MediaWiki API functions (no key, CORS with
+  `origin=*`). The first function is the completion suggester (`action=opensearch`). This
+  is the search-box dropdown. It accepts errors, ranks by popularity, and is good for
+  names with no separator. The second function is the full-text search. If the full-text
+  search gives a "did you mean" suggestion, the app sends the query again with that
+  suggestion.
+- The app then ranks the candidates on the client in one batched
+  `pageimages`+`pageprops` request. The app removes disambiguation pages and articles
+  with no photo. A title that is equal to the typed name, letter for letter, wins
+  immediately (the comparison ignores spaces, accents, and suffixes such as "(actor)").
+  If no title wins, the popularity order decides. The app gets the lead image of the
+  winner at a width of 900 px.
+- The app downloads the full image and records its true aspect ratio before the circle
+  becomes grey again. The tile for the image then has the correct size, and the photo
+  shows with no crop.
+- Each request has a time limit. If a request fails, the app uses the three-zone tap
+  force. The app shows no error.
 
 ## Development
 
-Everything lives in `index.html`. Serve it locally with any static server:
+All the code is in `index.html`. To start the app on your computer, use a static server:
 
 ```
 python3 -m http.server 8000
 ```
 
-then open `http://localhost:8000/?=dualipa`. A manual test hook is exposed at
-`window.__faceTest` (`state()`, `arm(url)`, `doSwap()`) for driving the swap
-deterministically from the console.
+Then open `http://localhost:8000/?=dualipa`. For manual tests, the console object
+`window.__faceTest` has these functions: `state()`, `arm(url)`, and `doSwap()`. Use them
+to do the swap in a controlled way.
